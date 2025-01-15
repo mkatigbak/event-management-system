@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment 2: Event Portal - Mark Katigbak</title>
+    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body style="background-color: burlywood;">
+    <div class="container mt-5">
+        <h1>Event Management System</h1>
+
+        <br />
+
+        <h2>Create Event</h2>
+        <form id="createEventForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="text" class="form-control" id="name" placeholder="Event Name" required>
+            </div>
+            <div class="form-group">
+                <input type="date" class="form-control" id="date" required>
+            </div>
+            <div class="form-group">
+                <input type="time" class="form-control" id="time" required>
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" id="location" placeholder="Location" required>
+            </div>
+            <div class="form-group">
+                <textarea class="form-control" id="description" placeholder="Description" required></textarea>
+            </div>
+            <div class="form-group">
+                <input type="file" class="form-control" id="image" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Event</button>
+        </form>
+
+        <h2 class="mt-5">Events List</h2>
+        <ul id="eventsList" class="list-group"></ul>
+
+        <h2 class="mt-5">Update Event</h2>
+<form id="updateEventForm">
+    <div class="form-group">
+        <input type="number" class="form-control" id="updateId" placeholder="Event ID" required>
+    </div>
+    <div class="form-group">
+        <input type="text" class="form-control" id="updateName" placeholder="Event Name" required>
+    </div>
+    <div class="form-group">
+        <input type="date" class="form-control" id="updateDate" placeholder="Event Date" required>
+    </div>
+    <div class="form-group">
+        <input type="time" class="form-control" id="updateTime" placeholder="Event Time" required>
+    </div>
+    <div class="form-group">
+        <input type="text" class="form-control" id="updateLocation" placeholder="Location" required>
+    </div>
+    <div class="form-group">
+        <textarea class="form-control" id="updateDescription" placeholder="Description" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-warning">Update Event</button>
+</form>
+        </form>
+
+        <h2 class="mt-5">Delete Event</h2>
+        <form id="deleteEventForm">
+            <div class="form-group">
+                <input type="number" class="form-control" id="deleteId" placeholder="Event ID" required>
+            </div>
+            <button type="submit" class="btn btn-danger" style="margin-bottom: 20px;">Delete Event</button>
+        </form>
+    </div>
+
+    <!-- Modal for Event Details -->
+    <div class="modal fade" id="eventDetailsModal" tabindex="-1" role="dialog" aria-labelledby="eventDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eventDetailsModalLabel">Event Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img id="eventImage" src="" alt="Event Image" class="img-fluid mb-3">
+                    <h5 id="eventName"></h5>
+                    <p id="eventDescription"></p>
+                    <p><strong>Date:</strong> <span id="eventDate"></span></p>
+                    <p><strong>Time:</strong> <span id="eventTime"></span></p>
+                    <p><strong>Location:</strong> <span id="eventLocation"></span></p>
+
+                    <div class="form-group">
+                        <label for="emailInput">Send Event Details to Email:</label>
+                        <input type="email" class="form-control" id="emailInput" placeholder="Enter email address">
+                    </div>
+
+                    <button id="sendEmailButton" class="btn btn-primary">Send Event Details</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:8080/events'  // API endpoint for events
+        
+        // Create event
+        document.getElementById('createEventForm').addEventListener('submit', async (e) => {
+            e.preventDefault()  // Prevent default form submission
+            const formData = new FormData()
+            formData.append('name', document.getElementById('name').value)
+            formData.append('date', document.getElementById('date').value)
+            formData.append('time', document.getElementById('time').value)
+            formData.append('location', document.getElementById('location').value)
+            formData.append('description', document.getElementById('description').value)
+            formData.append('image', document.getElementById('image').files[0])
+            
+            await fetch(apiUrl, {
+                method: 'POST',
+                body: formData  // Send form data to create event
+            })
+            fetchEvents()   // Refresh event list
+        })
+        
+        // Format date to a readable string
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' }
+            return new Date(dateString).toLocaleDateString(undefined, options)
+        }
+        
+        // Format time to 12-hour format
+        function formatTime(timeString) {
+            const [hours, minutes] = timeString.split(':')
+            const hour = parseInt(hours, 10)
+            const isAM = hour < 12
+            const formattedHour = hour % 12 || 12  // Convert 0 to 12 for midnight
+            const formattedTime = `${formattedHour}:${minutes} ${isAM ? 'AM' : 'PM'}`
+            return formattedTime
+        }
+        
+        // Fetch and display events
+        async function fetchEvents() {
+            const response = await fetch(apiUrl)
+            const events = await response.json()
+            const eventsList = document.getElementById('eventsList')
+            eventsList.innerHTML = ''  // Clear existing list
+            events.forEach(event => {
+                const li = document.createElement('li')
+                li.className = 'list-group-item'
+                li.textContent = `Event id: ${event.id} - ${event.name} - ${formatDate(event.date)} - ${formatTime(event.time)}`
+                li.style.cursor = 'pointer'                // Change cursor to pointer
+                li.onclick = () => showEventDetails(event) // Show details on click
+                eventsList.appendChild(li)
+            })
+        }
+        
+        // Show event details in modal
+        function showEventDetails(event) {
+            document.getElementById('eventName').textContent = event.name
+            document.getElementById('eventDescription').textContent = event.description
+            document.getElementById('eventDate').textContent = formatDate(event.date)
+            document.getElementById('eventTime').textContent = formatTime(event.time)
+            document.getElementById('eventLocation').textContent = event.location
+            document.getElementById('eventImage').src = `/${event.image_path}`                  // Ensure the path is correct
+            $('#eventDetailsModal').modal('show')                                               // Show the modal
+            
+            document.getElementById('sendEmailButton').setAttribute('data-event-id', event.id)  // Store event ID for email
+        }
+        
+        // Send email with event details
+        document.getElementById('sendEmailButton').addEventListener('click', async () => {
+            const email = document.getElementById('emailInput').value
+            const eventId = document.getElementById('sendEmailButton').getAttribute('data-event-id')
+            
+            if (!email) {
+                alert('Please enter an email address.') // Alert if email is empty
+                return
+            }
+    
+            try {
+                const response = await fetch(`/events/${eventId}/send-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email }),
+                })
+    
+                if (!response.ok) {
+                    throw new Error('Failed to send email') // Handle failed email sending
+                }
+    
+                alert('Event details sent successfully!')   // Success alert
+            } catch (error) {
+                console.error('Error sending email:', error)    // Log error
+                alert('Error sending email: ' + error.message)  // Alert error message
+            }
+        })
+
+        // Update event
+        document.getElementById('updateEventForm').addEventListener('submit', async (e) => {
+            e.preventDefault()  // Prevent default form submission
+            const id = document.getElementById('updateId').value
+            const eventData = {
+                name: document.getElementById('updateName').value,
+                date: document.getElementById('updateDate').value,
+                time: document.getElementById('updateTime').value,
+                location: document.getElementById('updateLocation').value,
+                description: document.getElementById('updateDescription').value
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(eventData) // Send updated event data
+                })
+
+                if (!response.ok) {
+                    throw new Error('Failed to update event')   // Handle failed update
+                }
+
+                fetchEvents()   // Refresh the event list
+            } catch (error) {
+                console.error('Error updating event:', error)   // Log error
+                alert('Error updating event: ' + error.message) // Alert error message
+            }
+        })
+
+        // Delete event
+        document.getElementById('deleteEventForm').addEventListener('submit', async (e) => {
+            e.preventDefault()  // Prevent default form submission
+            const id = document.getElementById('deleteId').value
+            await fetch(`${apiUrl}/${id}`, {
+                method: 'DELETE'    // Send delete request
+            })
+            fetchEvents()   // Refresh event list
+        })
+
+        // Initial fetch of events
+        fetchEvents()   // Load events on page load
+    </script>
+</body>
+</html>
