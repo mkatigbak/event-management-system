@@ -1,4 +1,4 @@
-# Event Management System by Mark Katigbak
+# Event Management System
 
 This is a server-side event management system built with Node.js and MySQL. It allows users to create, read, update, and delete events, upload images, and send email notifications to attendees.
 
