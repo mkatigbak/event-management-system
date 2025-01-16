@@ -29,7 +29,7 @@ app.get("/events", async (req, res) => {
 app.get("/events/:id", async (req, res) => {
     const id = req.params.id
     const event = await getEvent(id)
-    res.send(event) // Respond with the event
+    res.send(event)    // Respond with the event
 })
 
 // Update an existing event
